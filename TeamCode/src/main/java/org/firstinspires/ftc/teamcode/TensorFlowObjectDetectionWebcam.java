@@ -31,6 +31,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -181,19 +182,19 @@ public class TensorFlowObjectDetectionWebcam extends LinearOpMode {
                             telemetry.addData("- Position (Row/Col)", "%.0f / %.0f", row, col);
                             telemetry.addData("- Size (Width/Height)", "%.0f / %.0f", width, height);
 
-                            if (recognition.getLabel().equals("1 Bolt") && !isSignalFound()) {
+                            if (recognition.getLabel().equals("0 Plus") && !isSignalFound()) {
                                 estePlus = true;
                                 esteCerc = false;
                                 esteTriunghi = false;
                                 telemetry.addData("Object detected", "0 Plus");
                                 break;
-                            } else if (recognition.getLabel().equals("2 Bulb") && !isSignalFound()) {
+                            } else if (recognition.getLabel().equals("1 Cerc") && !isSignalFound()) {
                                 estePlus = false;
                                 esteCerc = true;
                                 esteTriunghi = false;
                                 telemetry.addData("Object detected", "1 Cerc");
                                 break;
-                            } else if (recognition.getLabel().equals("3 Panel") && !isSignalFound()){
+                            } else if (recognition.getLabel().equals("2 Triunghi") && !isSignalFound()){
                                 estePlus = false;
                                 esteCerc = false;
                                 esteTriunghi = true;
