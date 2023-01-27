@@ -31,7 +31,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -60,9 +59,9 @@ import java.util.List;
  * IMPORTANT: In order to use this OpMode, you need to obtain your own Vuforia license key as
  * is explained below.
  */
-@Autonomous(name = "Autonomous", group = "AutonomousMode")
+@Autonomous(name = "AutonomieStanga", group = "AutonomousMode")
 //@Disabled
-public class TensorFlowObjectDetectionWebcam extends LinearOpMode {
+public class AutonomieStanga extends LinearOpMode {
 
     /*
      * Specify the source for the Tensor Flow Model.
@@ -93,7 +92,9 @@ public class TensorFlowObjectDetectionWebcam extends LinearOpMode {
     private DcMotor motorDreaptaSpate = null;
     private DcMotor motorStangaSpate = null;
     private DcMotor motorBrat = null;
-    private Servo Grabber = null;
+    private DcMotor motorBrat2 = null;
+    private Servo servoBrat = null;
+    private Servo servoGrab = null;
 
     private final static int powerInit = 0;
     private double powerMiscareFata = 0.5;
@@ -136,6 +137,7 @@ public class TensorFlowObjectDetectionWebcam extends LinearOpMode {
         // first.
         initVuforia();
         initTfod();
+        initHardware();
 
 
 
@@ -204,40 +206,15 @@ public class TensorFlowObjectDetectionWebcam extends LinearOpMode {
                         }
                         telemetry.update();
                     }
+
+                    // TODO traseu spre stack, cod care sa apuce conurile si sa le puna pe junctiunea mare
+
                     if(!isSignalFound()){
-                        if(estePlus) MersSpreZona1();
+                        if(estePlus) MersSpreZona3();
                         else if(esteCerc) MersSpreZona2();
-                        else if(esteTriunghi) MersSpreZona3();
+                        else if(esteTriunghi) MersSpreZona1();
                     }
 
-                    // TODO cod pentru punerea conului pe junctiuni (pune-l intr-o functie recursiva)
-                    updatedRecognitions = tfod.getUpdatedRecognitions();
-                    if (updatedRecognitions != null){
-                        telemetry.addData("# Objects Detected", updatedRecognitions.size());
-
-                        // step through the list of recognitions and display image position/size information for each one
-                        // Note: "Image number" refers to the randomized image orientation/number
-                        for (Recognition recognition : updatedRecognitions) {
-                            double col = (recognition.getLeft() + recognition.getRight()) / 2;
-                            double row = (recognition.getTop() + recognition.getBottom()) / 2;
-                            double width = Math.abs(recognition.getRight() - recognition.getLeft());
-                            double height = Math.abs(recognition.getTop() - recognition.getBottom());
-
-                            telemetry.addData("", " ");
-                            telemetry.addData("Image", "%s (%.0f %% Conf.)", recognition.getLabel(), recognition.getConfidence() * 100);
-                            telemetry.addData("- Position (Row/Col)", "%.0f / %.0f", row, col);
-                            telemetry.addData("- Size (Width/Height)", "%.0f / %.0f", width, height);
-
-                            // Daca obiectul recunoscut este o junctiune
-                                // isJunction = true
-                                // Iesi din loop (break)
-                        }
-                    }
-                    // Daca isJunction este adevarat
-                        // Aliniat robotul spre junctiune
-                        // Pus conul pe junctiune
-                    // Altfel
-                        // Roteste robotul si cauta obiecte
                 }
             }
         }
@@ -413,13 +390,17 @@ public class TensorFlowObjectDetectionWebcam extends LinearOpMode {
         resetAngle();
     }
 
-    private void initMotors(){
+    private void initHardware(){
         motorDreaptaFata = hardwareMap.dcMotor.get("motorDreaptaFata");
         motorStangaFata = hardwareMap.dcMotor.get("motorStangaFata");
         motorDreaptaSpate = hardwareMap.dcMotor.get("motorDreaptaSpate");
         motorStangaSpate = hardwareMap.dcMotor.get("motorStangaSpate");
 
         motorBrat = hardwareMap.dcMotor.get("motorBrat");
+        motorBrat2 = hardwareMap.dcMotor.get("motorBrat2");
+        servoBrat = hardwareMap.servo.get("servoBrat");
+
+        servoGrab = hardwareMap.servo.get("servoGrab");
 
         motorDreaptaFata.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorStangaFata.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -427,6 +408,7 @@ public class TensorFlowObjectDetectionWebcam extends LinearOpMode {
         motorStangaSpate.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         motorBrat.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motorBrat2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         motorDreaptaFata.setDirection(DcMotorSimple.Direction.REVERSE);
         motorStangaFata.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -434,6 +416,7 @@ public class TensorFlowObjectDetectionWebcam extends LinearOpMode {
         motorStangaSpate.setDirection(DcMotorSimple.Direction.FORWARD);
 
         motorBrat.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorBrat2.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     private boolean isSignalFound(){
