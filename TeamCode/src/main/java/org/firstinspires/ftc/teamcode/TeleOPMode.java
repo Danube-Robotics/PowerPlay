@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -8,11 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-
 import androidx.annotation.Nullable;
-
-import static com.qualcomm.hardware.bosch.BNO055IMU.*;
 
 @TeleOp(name = "TeleOp" , group = "MechanumTeleOp")
 public class TeleOPMode extends OpMode {
@@ -31,11 +26,10 @@ public class TeleOPMode extends OpMode {
     private DcMotor motorBrat2 = null;
     private DcMotor motorBratCentral = null;
 
-
-
-    // Servo-ul care actioneaza clestele
+    // Servo-urile care actioneaza clestele
     private Servo servoGrab1 = null;
     private Servo servoGrab2 = null;
+    private Servo servoRotate = null;
 
     // Acestea sunt valorile minime si maxime care pot fii atribuite motoarelor si servo-urilor
     private double MIN_POSITION = 0, MAX_POSITION = 1;
@@ -44,15 +38,15 @@ public class TeleOPMode extends OpMode {
     private final static int powerInit = 0;
 
     // Valorile puterilor cu care se poate deplasa robotul
-    private final static double morePower = 0.8; // nu e in tlf
-    private final static double lessPower = 0.6; // nu e in tlf
+    private final static double morePower = 0.6;
+    private final static double lessPower = 0.45;
 
     // Variabila care contine valoarea puterii cu care se misca bratul
     private double powerBrat1 = powerInit;
     private double powerBrat2 = powerInit;
 
-
-    private double positionGrab = 0.1;
+    // Variabila care contine valoarea pozitiei la care se inchide grabul
+    private double positionGrab = 0.04;
 
     // Valoarea puterii maxime cu care poate fii actionat bratul
     private double powerActiune = 1;
@@ -66,25 +60,19 @@ public class TeleOPMode extends OpMode {
     private double powerDreaptaSpate = powerInit;
     private double powerStangaSpate = powerInit;
 
-    // Expresiile logice care verifica daca butonul X (gamepad 2) care actioneaza servo-ul a fost apasat, respectiv daca sistemul de Intake este pornit (uita-te in metoda Grabber)
-    private boolean xRelease2 = true;
-    private boolean isGrabbing = false;
-
     // Expresiile logice care verifica daca butonul X (gamepad 1) care schimba vitezele a fost apasat, respectiv daca puterea a fost sau nu redusa (uita-te in metoda changePower)
     private boolean xRelease = true;
-    private boolean putereRedusa = true;
+    private boolean putereRedusa = false;
 
-    // Expresiile logice care verifica daca butonul Y (gamepad 2) care ridica glisiera centrala a fost apasat, respectiv daca aceasta este ridicata sau nu (uita-te in metoda ridicareBrat)
-    private boolean yRelease = true;
-    private boolean esteRidicat = false;
+    private boolean rbRelease = true;
+    private boolean clesteInchis = false;
 
+    private boolean lbRelease = true;
+    private boolean clesteRotit = false;
 
     @Override
     public void init() {
         // Se initializeaza in hardware map
-
-        telemetry.addData("Mode", "calibrating...");
-        telemetry.update();
 
         //Metoda hardwareMap preia din expansion hub informatii despre motor/servo si nu mai este null, daca primiti eroarea NullPointerException s-ar putea sa fie din cauza ca nu ati initializat aici motorul si acesta a ramas null
         motorDreaptaFata = hardwareMap.dcMotor.get("motorDreaptaFata");
@@ -98,6 +86,7 @@ public class TeleOPMode extends OpMode {
 
         servoGrab1 = hardwareMap.servo.get("servoGrab1");
         servoGrab2 = hardwareMap.servo.get("servoGrab2");
+        servoRotate = hardwareMap.servo.get("servoRotate");
 
         //Apelarea metodei initMotor declarata mai jos(obligatorie)
         initMotor(motorDreaptaFata, "motorDreaptaFata", true, powerInit, true, true);
@@ -109,18 +98,19 @@ public class TeleOPMode extends OpMode {
         initMotor(motorBrat2, "motorBrat2", false, powerInit, true, true);
         initMotor(motorBratCentral, "motorBratCentral", false, powerInit, true, true);
 
-
         //Motoatele pot rula cu encoder sau fara encoder, encoderul este un cablu care care masoara diferite chestii despre motor, daca nu folositi encoder trebuie sa setati modul asta
         motorDreaptaFata.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorStangaFata.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorDreaptaSpate.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorStangaSpate.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
         motorBrat1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorBrat2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
         motorBratCentral.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         //Aici se seteaza diretia motorului, reverse sau forward, e simplu de inteles
-        motorDreaptaFata.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorDreaptaFata.setDirection(DcMotorSimple.Direction.FORWARD);
         motorStangaFata.setDirection(DcMotorSimple.Direction.FORWARD);
         motorDreaptaSpate.setDirection(DcMotorSimple.Direction.REVERSE);
         motorStangaSpate.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -129,26 +119,20 @@ public class TeleOPMode extends OpMode {
         motorBrat2.setDirection(DcMotorSimple.Direction.REVERSE);
         motorBratCentral.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        //servoGrab1.setDirection(Servo.Direction.REVERSE);
+        servoGrab1.setDirection(Servo.Direction.FORWARD);
         servoGrab2.setDirection(Servo.Direction.REVERSE);
 
-        //servoGrab1.setPosition(0.3);
-        //servoGrab2.setPosition(0.3);
-
         setPower(powerDreaptaFata, powerStangaFata, powerDreaptaSpate, powerStangaSpate);
-
     }
 
 
     // Metoda care merge pe tot parcursul OP Mode-ului, aici apelati toate metodele care fac robotul sa se miste
     @Override
     public void loop() {
-
         changePower();
         ridicareBrat();
         Grabber();
-        miscareMechanum();
-
+        Miscare();
     }
 
 
@@ -173,7 +157,6 @@ public class TeleOPMode extends OpMode {
         motorStangaFata.setPower(powerStangaFata);
         motorDreaptaSpate.setPower(powerDreaptaSpate);
         motorStangaSpate.setPower(powerStangaSpate);
-
     }
 
     // Metoda care modifica valoarea vitezei
@@ -195,28 +178,7 @@ public class TeleOPMode extends OpMode {
     }
 
     //Miscarea rotilor nachanum (Miscarea robotului fata spate stanga dreapta)
-    private void miscareMechanum() {
-//
-//        double y = -gamepad1.left_stick_y; // Remember, this is reversed!
-//        double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
-//        double rx = gamepad1.right_stick_x;
-//
-//        // Denominator is the largest motor power (absolute value) or 1
-//        // This ensures all the powers maintain the same ratio, but only when
-//        // at least one is out of the range [-1, 1]
-//        double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
-//        double frontLeftPower = (y + x + rx) / denominator;
-//        double backLeftPower = (y - x + rx) / denominator;
-//        double frontRightPower = (y - x - rx) / denominator;
-//        double backRightPower = (y + x - rx) / denominator;
-//
-//        motorStangaFata.setPower(frontLeftPower);
-//        motorStangaSpate.setPower(backLeftPower);
-//        motorDreaptaFata.setPower(frontRightPower);
-//        motorDreaptaSpate.setPower(backRightPower);
-
-
-
+    private void Miscare() {
         powerDreaptaFata = Range.clip(gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -powerMiscareFata, powerMiscareFata);
         powerStangaFata = Range.clip(gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x, -powerMiscareFata, powerMiscareFata);
         powerDreaptaSpate = Range.clip(gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x, -powerMiscareFata, powerMiscareFata);
@@ -227,96 +189,55 @@ public class TeleOPMode extends OpMode {
 
     // Metoda care actioneaza clestele ; acesta se inchide/se deschide atunci cand butonul X de pe gamepad 2 este apasat
     private void Grabber() {
-      /*  if(gamepad2.b){
-            servoGrab.setPosition(0.3);
-        }else {
-            servoGrab.setPosition(Servo.MIN_POSITION);
-        } */
-
-        /*
-        if (gamepad2.x) {
-            if (xRelease2 == false) {
-                xRelease2 = true;
-                if (isGrabbing) {
-                    servoGrab1.setPosition(MIN_POSITION);
-                    servoGrab2.setPosition(MIN_POSITION);
-                    isGrabbing = false;
+        if(gamepad2.right_bumper){
+            if (rbRelease) {
+                rbRelease = false;
+                if (!clesteInchis) {
+                    servoGrab1.setPosition(-positionGrab);
+                    servoGrab2.setPosition(-positionGrab);
+                    clesteInchis = true;
                 } else {
-                    servoGrab1.setPosition(0.1);
-                    servoGrab2.setPosition(0.1);
-                    isGrabbing = true;
+                    servoGrab1.setPosition(positionGrab);
+                    servoGrab2.setPosition(positionGrab);
+                    clesteInchis = false;
                 }
             }
-            else {
-                xRelease2 = false;
+        } else {
+            rbRelease = true;
+        }
+
+        if(gamepad2.left_bumper){
+            if(lbRelease){
+                lbRelease = false;
+                if(!clesteRotit) {
+                    servoRotate.setPosition(-0.01);
+                    clesteRotit = true;
+                } else {
+                    servoRotate.setPosition(0.02);
+                    clesteRotit = false;
+                }
             }
-        }*/
+        } else {
+            lbRelease = true;
+        }
 
-
-        if(gamepad2.right_bumper){
+        /*if(gamepad2.right_bumper){
             servoGrab1.setPosition(MIN_POSITION);
             servoGrab2.setPosition(MIN_POSITION);
         } else if(gamepad2.left_bumper) {
-            servoGrab1.setPosition(0.04);
-            servoGrab2.setPosition(0.04);
-        }
-
-//
-//            } else {
-//                xRelease2 = false;
-//            }
-//        }
-
-        /*
-        if (gamepad2.right_bumper){
-            servoGrab1.setPosition(MIN_POSITION);
-            servoGrab2.setPosition(MIN_POSITION);
-        }
-        else if (gamepad2.left_bumper){
             servoGrab1.setPosition(positionGrab);
             servoGrab2.setPosition(positionGrab);
         }*/
-
-
-        /*
-        if(gamepad2.x) {
-            servoGrab.setPosition(0.1);
-        } else {
-            servoGrab.setPosition(MIN_POSITION);
-        }
-        */
     }
-
-    /*private void ridicareGiliseraMijloc() {
-        powerBrat2 = Range.clip(gamepad2.right_stick_y, -powerActiune, powerActiune);
-        motorBratCentral.setPower(powerBrat2);
-    }*/
 
     // Metoda care ridica bratul
     private void ridicareBrat() {
-        // metoda range.clip seteaza puterea unui motor in functie de rangge-ul manetei de pe controller
+        // metoda range.clip seteaza puterea unui motor in functie de range-ul manetei de pe controller
         powerBrat1 = Range.clip(gamepad2.left_stick_y, -powerActiune, powerActiune);
         powerBrat2 = Range.clip(gamepad2.right_stick_y, -powerActiune, powerActiune);
         motorBrat1.setPower(powerBrat1);
         motorBrat2.setPower(powerBrat1);
         motorBratCentral.setPower(powerBrat2);
-
-        // ridica glisiera centrala la apasarea butonului y
-
-       // if (gamepad2.y) {
-           // if (yRelease == false) {
-             //   yRelease = true;
-              //  if (esteRidicat) {
-               //    servoBrat.setPosition(MIN_POSITION);
-                //    esteRidicat = false;
-               // } else {
-                 //   servoBrat.setPosition(0.5);
-                  //  esteRidicat = true;
-               // }
-           // } else {
-            //   yRelease = false;
-           // }
-       // }
     }
 
 }

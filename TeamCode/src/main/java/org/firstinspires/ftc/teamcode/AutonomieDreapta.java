@@ -29,9 +29,7 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -40,10 +38,6 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
@@ -52,16 +46,6 @@ import java.util.List;
 
 import androidx.annotation.Nullable;
 
-/**
- * This 2022-2023 OpMode illustrates the basics of using the TensorFlow Object Detection API to
- * determine which image is being presented to the robot.
- *
- * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
- * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list.
- *
- * IMPORTANT: In order to use this OpMode, you need to obtain your own Vuforia license key as
- * is explained below.
- */
 @Autonomous(name = "AutonomieDreapta", group = "AutonomousMode")
 //@Disabled
 public class AutonomieDreapta extends LinearOpMode {
@@ -86,6 +70,7 @@ public class AutonomieDreapta extends LinearOpMode {
     // Servo-ul care actioneaza clestele
     private Servo servoGrab1 = null;
     private Servo servoGrab2 = null;
+    private Servo servoRotate=null;
 
     // Acestea sunt valorile minime si maxime care pot fii atribuite motoarelor si servo-urilor
     private double MIN_POSITION = 0, MAX_POSITION = 1;
@@ -116,55 +101,39 @@ public class AutonomieDreapta extends LinearOpMode {
     private double powerDreaptaSpate = powerInit;
     private double powerStangaSpate = powerInit;
 
-    // Expresiile logice care verifica daca butonul X (gamepad 2) care actioneaza servo-ul a fost apasat, respectiv daca sistemul de Intake este pornit (uita-te in metoda Grabber)
-    private boolean xRelease2 = true;
-    private boolean isGrabbing = false;
-
-    // Expresiile logice care verifica daca butonul X (gamepad 1) care schimba vitezele a fost apasat, respectiv daca puterea a fost sau nu redusa (uita-te in metoda changePower)
-    private boolean xRelease = true;
-    private boolean putereRedusa = true;
-
-    // Expresiile logice care verifica daca butonul Y (gamepad 2) care ridica glisiera centrala a fost apasat, respectiv daca aceasta este ridicata sau nu (uita-te in metoda ridicareBrat)
-    private boolean yRelease = true;
-    private boolean esteRidicat = false;
 
 
-    /*
-     * Specify the source for the Tensor Flow Model.
-     * If the TensorFlowLite object model is included in the Robot Controller App as an "asset",
-     * the OpMode must to load it using loadModelFromAsset().  However, if a team generated model
-     * has been downloaded to the Robot Controller's SD FLASH memory, it must to be loaded using loadModelFromFile()
-     * Here we assume it's an Asset.    Also see method initTfod() below .
-     */
+    // Variabila care contine numele fisierului de tip tflite care contine Modelul nostru de TensorFlow
+
+    // Acesta se adauga in FtcRobotController/src/assets/
+
+    // Modelul de TensorFlow NU se poate face pe Teachable Machine, doar pe FTC Machine Learning Toolchain,
+    // deoarece SDK-ul de la FTC suporta strict modele de TensorFlow pentru Object Detection, in timp ce cu
+    // Teachable Machine poti face modele doar pentru Image Detection (care functioneaza diferit)
+
+    // Daca aceasta regula nu este respectata, atunci cand veti da run, aplicatia FTC Robot Controller din
+    // telefon va da crash atunci cand dati Init din Driver Station
     private static final String TFOD_MODEL_ASSET = "CustomModel.tflite";
-    //private static final String TFOD_MODEL_FILE  = "/Internal shared storage/FIRST/tflitemodels/CustomModel.tflite";
 
-
+    // Acest string contine label-urile din TensorFlow (numele obiectelor)
     private static final String[] LABELS = {
-            "0 Plus",
-            "1 Cerc",
-            "2 Triunghi"
+            "Cerc",
+            "Plus",
+            "Triunghi"
             // TODO junctiune si cele 4 imagini
     };
 
+    // Expresiile logice care contin informatii despre zona de semnal primita la randomizare (aflata pe signal cone)
     boolean estePlus = false;
     boolean esteCerc = false;
     boolean esteTriunghi = false;
 
+    // Variabila care contine informatii despre Runtime (timpul de la Initializare)
     private ElapsedTime runtime = new ElapsedTime();
 
-    /*
-     * IMPORTANT: You need to obtain your own license key to use Vuforia. The string below with which
-     * 'parameters.vuforiaLicenseKey' is initialized is for illustration only, and will not function.
-     * A Vuforia 'Development' license key, can be obtained free of charge from the Vuforia developer
-     * web site at https://developer.vuforia.com/license-manager.
-     *
-     * Vuforia license keys are always 380 characters long, and look as if they contain mostly
-     * random data. As an example, here is a example of a fragment of a valid key:
-     *      ... yIgIzTqZ4mWjk9wd3cZO9T1axEqzuhxoGlfOOI2dRzKS4T0hQ8kT ...
-     * Once you've obtained a license key, copy the string from the Vuforia web site
-     * and paste it in to your code on the next line, between the double quotes.
-     */
+    // Aceasta este cheia de developer Vuforia care este necesara ca webcam-ul sa transmita informatii spre TensorFlow
+    // O puteti obtine intrand pe site-ul lor si accesand Basic Plan-ul lor gratiut, care va va da o cheie
+    // Aceasta este un string de 380 de caractere random care va va permite utilizarea platformei, in principiu, nelimitat
     private static final String VUFORIA_KEY =
             "AYjRNx7/////AAABmTp7BF4SlE4Vq3lfkFG3MtU459ynZzi2xIyqOf8k9JXVlkbaKpBgVn0It4fpBjfZuBIhMdp3HjEFC/qoZykpnUnZsyiZbWKFesXC4yWtC5GkiVNjL/wMIX077+2SIURNGqKEsdKMs1VvGSqude9QIzRN3vzrpjKAoYGwvqELfdR8TqONI0nfTSYwmAvTIFVvBVhDf8bKPX3o7Fjpv6vTI4UP/5Weq469ateV0NYnGYHe4gs7KeigZKwT2ZOYws/I8g8qq9/2ZsfxKsnw0YMMLcbu68AzkNm6itcSep5/9wB32mT8rzIE0YWo/deKzja9mkFnwrIwXJiqlXyo1dt8RB4G1EzwvR5gjVr1jFSypvfi";
 
@@ -182,18 +151,14 @@ public class AutonomieDreapta extends LinearOpMode {
 
     @Override
     public void runOpMode() {
-        // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
-        // first.
-        initVuforia();
+
+        initVuforia(); // Mereu aceasta intializare trebuie sa fie prima !!!
         initTfod();
         initHardware();
 
 
 
-        /**
-         * Activate TensorFlow Object Detection before we wait for the start command.
-         * Do it here so that the Camera Stream window will have the TensorFlow annotations visible.
-         **/
+        // Se activeaza TensorFlow Object Detection (MEREU INAINTE DE WAIT FOR START)
         if (tfod != null) {
             tfod.activate();
 
@@ -203,22 +168,26 @@ public class AutonomieDreapta extends LinearOpMode {
             // to artificially zoom in to the center of image.  For best results, the "aspectRatio" argument
             // should be set to the value of the images used to create the TensorFlow Object Detection model
             // (typically 16/9).
-            tfod.setZoom(1.0, 16.0 / 9.0);
+            tfod.setZoom(2.5, 16.0 / 9.0);
         }
 
-        /** Wait for the game to begin */
-        //telemetry.addData(">", "Press Play to start op mode");
-        //telemetry.update();
+        // Se asteapta apasarea butonului de Start
         waitForStart();
 
         if (opModeIsActive()) {
-            while (opModeIsActive()) {
-                if (tfod != null) {
-                    // getUpdatedRecognitions() will return null if no new information is available since
-                    // the last time that call was made.
+                runtime.reset(); // Reseteaza runtime-ul, ca valoarea timpului sa fie de 0 secunde
+
+                // Cat timp semnalul nu a fost gasit si nu au trecut mai mult de 5 secunde de la Start
+                // se vor cauta zonele de semnal de pe signal sleeve
+                while (tfod != null && !isSignalFound() && runtime.seconds() < 5) {
+                    // Se creeaza o lista de tip Recognition, ce contin informatii despre obiectele recunoscute,
+                    // cum ar fii Label (numele acestuia), Confidence (increderea ca acela este cu adevarat
+                    // obiectul recunoscut) si informatii despre pozitionarea acestuia fata de Webcam
+
+                    // getUpdatedRecognitions() va returna null daca nu gaseste nimic la ultima apelare a functiei
                     List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
                     if (updatedRecognitions != null) {
-                        //telemetry.addData("# Objects Detected", updatedRecognitions.size());
+                        telemetry.addData("# Objects Detected", updatedRecognitions.size());
 
                         // step through the list of recognitions and display image position/size information for each one
                         // Note: "Image number" refers to the randomized image orientation/number
@@ -228,57 +197,87 @@ public class AutonomieDreapta extends LinearOpMode {
                             double width = Math.abs(recognition.getRight() - recognition.getLeft());
                             double height = Math.abs(recognition.getTop() - recognition.getBottom());
 
-                            //telemetry.addData("", " ");
-                            //telemetry.addData("Image", "%s (%.0f %% Conf.)", recognition.getLabel(), recognition.getConfidence() * 100);
-                            //telemetry.addData("- Position (Row/Col)", "%.0f / %.0f", row, col);
-                            //telemetry.addData("- Size (Width/Height)", "%.0f / %.0f", width, height);
+                            telemetry.addData("", " ");
+                            telemetry.addData("Image", "%s (%.0f %% Conf.)", recognition.getLabel(), recognition.getConfidence() * 100);
+                            telemetry.addData("- Position (Row/Col)", "%.0f / %.0f", row, col);
+                            telemetry.addData("- Size (Width/Height)", "%.0f / %.0f", width, height);
 
-                            if (recognition.getLabel().equals("0 Plus") && !isSignalFound()) {
+                            telemetry.update();
+
+                            if (recognition.getLabel().equals("Plus")) {
                                 estePlus = true;
-                                esteCerc = false;
-                                esteTriunghi = false;
-                                telemetry.addData("Object detected", "0 Plus");
-                                break;
-                            } else if (recognition.getLabel().equals("1 Cerc") && !isSignalFound()) {
-                                estePlus = false;
+                                telemetry.addData("Object detected", "Plus");
+                                telemetry.update();
+                            } else if (recognition.getLabel().equals("Cerc")) {
                                 esteCerc = true;
-                                esteTriunghi = false;
-                                telemetry.addData("Object detected", "1 Cerc");
-                                break;
-                            } else if (recognition.getLabel().equals("2 Triunghi") && !isSignalFound()){
-                                estePlus = false;
-                                esteCerc = false;
+                                telemetry.addData("Object detected", "Cerc");
+                                telemetry.update();
+                            } else if (recognition.getLabel().equals("Triunghi")){
                                 esteTriunghi = true;
-                                telemetry.addData("Object detected", "2 Triunghi");
-                                break;
+                                telemetry.addData("Object detected", "Triunghi");
+                                telemetry.update();
+
                             }
                         }
-                        //telemetry.update();
+                        telemetry.update();
                     }
-
-                    // TODO traseu spre stack, cod care sa apuce conurile si sa le puna pe junctiunea mare
-
-                    if(!isSignalFound()){
-                        if(estePlus) MersSpreZona3();
-                        else if(esteCerc) MersSpreZona2();
-                        else if(esteTriunghi) MersSpreZona1();
-                    }
-
                 }
+
+                MersSpreStack();
+                //PuneConuri();
+                sleep(1000);
+
+                if(isSignalFound()){
+                    if(estePlus) MersSpreZona3();
+                    else if(esteCerc) MersSpreZona2();
+                    else if(esteTriunghi) MersSpreZona1();
+                }
+
+                //return;
             }
         }
+
+    private void PuneConuri() {
+
+    }
+
+    private void MersSpreStack() {
+        Miscare("Spate", 0.15);
+        sleep(500);
+        Miscare("Stanga", 1);
+        sleep(500);
+        Rotatie("Dreapta",1.4);
+        sleep(500);
+        Miscare("Fata", 1);
+        Miscare("Stanga", 0.1);
+        Miscare("Fata", 0.25);
+        sleep(500);
+        Miscare("Stanga", 0.3);
+        sleep(500);
+        Rotatie("Dreapta", 0.6);
+        sleep(500);
     }
 
     private void MersSpreZona1() {
-        //  TODO Traseul spre zona 1
+        // Miscare care functioneaza fara functia de mers spre stack
+        //Miscare("Spate", 0.75);
+        //sleep(100);
+        //Miscare("Dreapta", 1.05);
+        return;
     }
 
     private void MersSpreZona2() {
-        // TODO Traseul spre zona 2
+        // Miscare care functioneaza fara functia de mers spre stack
+        //Miscare("Spate", 1);
+        return;
     }
 
     private void MersSpreZona3(){
-        // TODO Traseul spre zona 3
+        // Miscare care functioneaza fara functia de mers spre stack
+        //Miscare("Spate", 0.75);
+        //sleep(100);
+        //Miscare("Stanga", 1);
+        return;
     }
 
     /**
@@ -311,64 +310,138 @@ public class AutonomieDreapta extends LinearOpMode {
 
         // Use loadModelFromAsset() if the TF Model is built in as an asset by Android Studio
         // Use loadModelFromFile() if you have downloaded a custom team model to the Robot Controller's FLASH.
-        //tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABELS);
-        tfod.loadModelFromFile(TFOD_MODEL_ASSET, LABELS);
+        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABELS);
+        //tfod.loadModelFromFile(TFOD_MODEL_FILE, LABELS);
     }
 
-    private void miscareMechanum(String directie, double ticks) {
+    // Metoda care face robotul sa se miste intr-o directie data pentru un anumit interval de timp exprimat in secunde
+    private void Miscare(String directie, double secunde) {
         switch (directie) {
 
             case "Dreapta":
-                while (runtime.seconds() < ticks && opModeIsActive()) {
-                    setPower(-powerMiscareFata, powerMiscareFata, -powerMiscareFata, powerMiscareFata);
+                runtime.reset();
+                while (runtime.seconds() < secunde && opModeIsActive()) {
+                    setPowerRoti(powerMiscareFata, -powerMiscareFata, -powerMiscareFata, powerMiscareFata);
                 }
-                setPower(powerInit, powerInit, powerInit, powerInit);
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
                 break;
 
             case "Stanga":
-                while (runtime.seconds() < ticks && opModeIsActive()) {
+                runtime.reset();
+                while (runtime.seconds() < secunde && opModeIsActive()) {
 
-                    setPower(powerMiscareFata, -powerMiscareFata, powerMiscareFata, -powerMiscareFata);
+                    setPowerRoti(-powerMiscareFata, powerMiscareFata, powerMiscareFata, -powerMiscareFata);
                 }
-                setPower(powerInit, powerInit, powerInit, powerInit);
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
                 break;
 
             case "Fata":
                 runtime.reset();
-                while (runtime.seconds() < ticks && opModeIsActive()) {
+                while (runtime.seconds() < secunde && opModeIsActive()) {
 
-                    setPower(powerMiscareFata, powerMiscareFata, powerMiscareFata, powerMiscareFata);
+                    setPowerRoti(-powerMiscareFata, -powerMiscareFata, -powerMiscareFata, -powerMiscareFata);
                 }
-                setPower(powerInit, powerInit, powerInit, powerInit);
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
                 break;
 
             case "Spate":
                 runtime.reset();
-                while (runtime.seconds() < ticks && opModeIsActive()) {
+                while (runtime.seconds() < secunde && opModeIsActive()) {
 
-                    setPower(-powerMiscareFata, -powerMiscareFata, -powerMiscareFata, -powerMiscareFata);
+                    setPowerRoti(powerMiscareFata, powerMiscareFata, powerMiscareFata, powerMiscareFata);
                 }
-                setPower(powerInit, powerInit, powerInit, powerInit);
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
                 break;
 
             default:
-                setPower(powerInit, powerInit, powerInit, powerInit);
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
                 break;
         }
     }
 
-    private void setPower(double powerDreaptaFata, double powerStangaFata, double powerDreaptaSpate, double powerStangaSpate) {
+    // Metoda care face robotul sa se roteasca intr-o directie data pentru un anumit interval de timp exprimat in secunde
+    private void Rotatie(String directie, double secunde){
+        switch (directie){
+
+            case "Stanga":
+                runtime.reset();
+                while(runtime.seconds() < secunde && opModeIsActive()){
+                    setPowerRoti(-powerMiscareFata, powerMiscareFata, -powerMiscareFata, powerMiscareFata);
+                }
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+                break;
+
+            case "Dreapta":
+                runtime.reset();
+                while(runtime.seconds() < secunde && opModeIsActive()){
+                    setPowerRoti(powerMiscareFata, -powerMiscareFata, powerMiscareFata, -powerMiscareFata);
+                }
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+                break;
+        }
+    }
+
+    // Metoda care face robotul sa isi ridice/coboare glisierele mari pentru un anumit interval de timp exprimat in secunde
+    private void RidicaGlisiereleMari(String directie, double secunde){
+        switch (directie){
+            case "Sus":
+                runtime.reset();
+                while(runtime.seconds() < secunde && opModeIsActive()){
+
+                }
+                break;
+
+            case "Jos":
+                runtime.reset();
+                while(runtime.seconds() < secunde && opModeIsActive()) {
+
+                }
+                break;
+        }
+    }
+
+    // Metoda care face robotul sa isi ridice/coboare glisiera centrala pentru un anumit interval de timp exprimat in secunde
+    private void RidicaGlisieraCentrala(String directie, double secunde){
+        switch (directie){
+            case "Sus":
+                runtime.reset();
+                while(runtime.seconds() < secunde && opModeIsActive()){
+                    setPowerGlisiere("Mari", powerActiune);
+                }
+                runtime.reset();
+                break;
+
+            case "Jos":
+                runtime.reset();
+                while(runtime.seconds() < secunde && opModeIsActive()){
+                    setPowerGlisiere("Mari", powerActiune);
+                }
+                break;
+        }
+    }
+
+    // Seteaza puterea rotilor
+    private void setPowerRoti(double powerDreaptaFata, double powerStangaFata, double powerDreaptaSpate, double powerStangaSpate) {
         motorDreaptaFata.setPower(powerDreaptaFata);
         motorStangaFata.setPower(powerStangaFata);
         motorDreaptaSpate.setPower(powerDreaptaSpate);
         motorStangaSpate.setPower(powerStangaSpate);
     }
 
-    public void waitSec(double seconds) {
-        runtime.reset();
-        while (runtime.seconds() < seconds && opModeIsActive()) ;
+    // Seteaza puterea glisierelor mari, respectiv glisierei centrale
+    private void setPowerGlisiere(String glisiera, double powerActiune){
+        switch (glisiera) {
+            case "Mari":
+                motorBrat1.setPower(powerActiune);
+                motorBrat2.setPower(powerActiune);
+                break;
+            case "Central":
+                motorBratCentral.setPower(powerActiune);
+                break;
+        }
     }
 
+    // Functia care initializeaza motoarele
     private void initMotor(@Nullable DcMotor motor, String string, boolean sens, double power, boolean mode, boolean... secMode) {
         motor = hardwareMap.dcMotor.get(string);
         if (secMode.length > 0) {
@@ -382,6 +455,7 @@ public class AutonomieDreapta extends LinearOpMode {
         }
     }
 
+    // Metoda care intializeaza motoarele, servo-urile si tot ce tine de Hardware pe robot (cu exceptia webcam-ului)
     private void initHardware(){
 
         //Metoda hardwareMap preia din expansion hub informatii despre motor/servo si nu mai este null, daca primiti eroarea NullPointerException s-ar putea sa fie din cauza ca nu ati initializat aici motorul si acesta a ramas null
@@ -396,6 +470,8 @@ public class AutonomieDreapta extends LinearOpMode {
 
         servoGrab1 = hardwareMap.servo.get("servoGrab1");
         servoGrab2 = hardwareMap.servo.get("servoGrab2");
+        servoRotate = hardwareMap.servo.get("servoRotate");
+
 
         //Apelarea metodei initMotor declarata mai jos(obligatorie)
         initMotor(motorDreaptaFata, "motorDreaptaFata", true, powerInit, true, true);
@@ -418,7 +494,7 @@ public class AutonomieDreapta extends LinearOpMode {
         motorBratCentral.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         //Aici se seteaza diretia motorului, reverse sau forward, e simplu de inteles
-        motorDreaptaFata.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorDreaptaFata.setDirection(DcMotorSimple.Direction.FORWARD);
         motorStangaFata.setDirection(DcMotorSimple.Direction.FORWARD);
         motorDreaptaSpate.setDirection(DcMotorSimple.Direction.REVERSE);
         motorStangaSpate.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -430,10 +506,11 @@ public class AutonomieDreapta extends LinearOpMode {
         //servoGrab1.setDirection(Servo.Direction.REVERSE);
         servoGrab2.setDirection(Servo.Direction.REVERSE);
 
-        //servoGrab1.setPosition(0.3);
-        //servoGrab2.setPosition(0.3);
+        /*servoRotate.setPosition(MIN_POSITION);
+        servoGrab1.setPosition(MIN_POSITION);
+        servoGrab2.setPosition(MIN_POSITION);*/
 
-        setPower(powerDreaptaFata, powerStangaFata, powerDreaptaSpate, powerStangaSpate);
+        setPowerRoti(powerDreaptaFata, powerStangaFata, powerDreaptaSpate, powerStangaSpate);
     }
 
     private boolean isSignalFound(){
