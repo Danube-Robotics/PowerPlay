@@ -9,6 +9,7 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -23,11 +24,19 @@ public class AutonomieDreapta extends LinearOpMode{
 
     // Declararea variabilelor, se declara cu null toate, tipurile lor sunt DcMotor sau Servo sau ce mai puneti pe robot
 
+    static final double     COUNTS_PER_MOTOR_REV    = 537.7 ;    // eg: TETRIX Motor Encoder
+    static final double     DRIVE_GEAR_REDUCTION    = 1.0 ;     // No External Gearing.
+    static final double     WHEEL_DIAMETER_INCHES   = 4.0 ;     // For figuring circumference
+    static final double     COUNTS_PER_INCH         = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
+            (WHEEL_DIAMETER_INCHES * 3.1415);
+    static final double     DRIVE_SPEED             = 0.6;
+    static final double     TURN_SPEED              = 0.5;
+
     // Motoarele de la roti
-    private DcMotor motorDreaptaFata = null;
-    private DcMotor motorStangaFata = null;
-    private DcMotor motorDreaptaSpate = null;
-    private DcMotor motorStangaSpate = null;
+    private DcMotorEx motorDreaptaFata = null;
+    private DcMotorEx motorStangaFata = null;
+    private DcMotorEx motorDreaptaSpate = null;
+    private DcMotorEx motorStangaSpate = null;
 
     // Motoarele de la brat (cele care actioneaza glisierele din lateral)
     private DcMotor motorBrat1 = null;
@@ -122,6 +131,7 @@ public class AutonomieDreapta extends LinearOpMode{
                     } else {
                         telemetry.addLine("Nu gasesc niciun tag");
                     }
+                    telemetry.update();
 
                 }
             }
@@ -171,17 +181,75 @@ public class AutonomieDreapta extends LinearOpMode{
     }
 
     private void MersSpreStack() {
-        if(opModeIsActive()){
-            // TODO cod sa mearga spre stack
+
+    }
+
+    private void MiscareRoti(String directie, double secunde) {
+        switch (directie) {
+            case "Dreapta":
+
+
+
+//            case "Dreapta":
+//                runtime.reset();
+//                while (runtime.seconds() < secunde && opModeIsActive()) {
+//                    setPowerRoti(powerMiscareFata, -powerMiscareFata, -powerMiscareFata, powerMiscareFata);
+//                }
+//                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+//                break;
+//
+//            case "Stanga":
+//                runtime.reset();
+//                while (runtime.seconds() < secunde && opModeIsActive()) {
+//
+//                    setPowerRoti(-powerMiscareFata, powerMiscareFata, powerMiscareFata, -powerMiscareFata);
+//                }
+//                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+//                break;
+//
+//            case "Fata":
+//                runtime.reset();
+//                while (runtime.seconds() < secunde && opModeIsActive()) {
+//
+//                    setPowerRoti(-powerMiscareFata, -powerMiscareFata, -powerMiscareFata, -powerMiscareFata);
+//                }
+//                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+//                break;
+//
+//            case "Spate":
+//                runtime.reset();
+//                while (runtime.seconds() < secunde && opModeIsActive()) {
+//
+//                    setPowerRoti(powerMiscareFata, powerMiscareFata, powerMiscareFata, powerMiscareFata);
+//                }
+//                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+//                break;
+//
+//            default:
+//                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+//                break;
         }
     }
 
-    private void MiscareRoti(){
+    // Metoda care face robotul sa se roteasca intr-o directie data pentru un anumit interval de timp exprimat in secunde
+    private void Rotatie(String directie, double secunde){
+        switch (directie){
+            case "Stanga":
+                runtime.reset();
+                while(runtime.seconds() < secunde && opModeIsActive()){
+                    setPowerRoti(-powerMiscareFata, powerMiscareFata, -powerMiscareFata, powerMiscareFata);
+                }
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+                break;
 
-    }
-
-    private void Rotatie(){
-
+            case "Dreapta":
+                runtime.reset();
+                while(runtime.seconds() < secunde && opModeIsActive()){
+                    setPowerRoti(powerMiscareFata, -powerMiscareFata, powerMiscareFata, -powerMiscareFata);
+                }
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+                break;
+        }
     }
 
     private void MiscareGlisiere(String directie, double secunde){
@@ -201,6 +269,8 @@ public class AutonomieDreapta extends LinearOpMode{
                 break;
         }
     }
+
+
 
     private void initATD(){
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
@@ -226,10 +296,10 @@ public class AutonomieDreapta extends LinearOpMode{
     private void initHardware(){
 
         //Metoda hardwareMap preia din expansion hub informatii despre motor/servo si nu mai este null, daca primiti eroarea NullPointerException s-ar putea sa fie din cauza ca nu ati initializat aici motorul si acesta a ramas null
-        motorDreaptaFata = hardwareMap.dcMotor.get("motorDreaptaFata");
-        motorDreaptaSpate = hardwareMap.dcMotor.get("motorDreaptaSpate");
-        motorStangaFata = hardwareMap.dcMotor.get("motorStangaFata");
-        motorStangaSpate = hardwareMap.dcMotor.get("motorStangaSpate");
+        motorDreaptaFata = hardwareMap.get(DcMotorEx.class, "motorDreaptaFata");
+        motorDreaptaSpate = hardwareMap.get(DcMotorEx.class, "motorDreaptaSpate");
+        motorStangaFata = hardwareMap.get(DcMotorEx.class, "motorStangaFata");
+        motorStangaSpate = hardwareMap.get(DcMotorEx.class, "motorStangaSpate");
 
         motorBrat1 = hardwareMap.dcMotor.get("motorBrat1");
         motorBrat2 = hardwareMap.dcMotor.get("motorBrat2");
@@ -238,15 +308,21 @@ public class AutonomieDreapta extends LinearOpMode{
         servoGrab2 = hardwareMap.servo.get("servoGrab2");
 
         //Motoatele pot rula cu encoder sau fara encoder, encoderul este un cablu care care masoara diferite chestii despre motor, daca nu folositi encoder trebuie sa setati modul asta
-        motorDreaptaFata.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorStangaFata.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorDreaptaSpate.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorStangaSpate.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motorDreaptaFata.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        motorStangaFata.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        motorDreaptaSpate.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        motorStangaSpate.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+
+        motorDreaptaFata.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        motorStangaFata.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        motorDreaptaSpate.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        motorStangaSpate.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+
         motorBrat1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorBrat2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         //Aici se seteaza diretia motorului, reverse sau forward, e simplu de inteles
-        motorDreaptaFata.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorDreaptaFata.setDirection(DcMotorSimple.Direction.REVERSE);
         motorStangaFata.setDirection(DcMotorSimple.Direction.FORWARD);
         motorDreaptaSpate.setDirection(DcMotorSimple.Direction.REVERSE);
         motorStangaSpate.setDirection(DcMotorSimple.Direction.FORWARD);

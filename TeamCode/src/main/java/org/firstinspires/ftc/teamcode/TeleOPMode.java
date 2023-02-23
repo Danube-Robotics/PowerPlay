@@ -13,7 +13,7 @@ import androidx.annotation.Nullable;
 public class TeleOPMode extends OpMode {
     // VARIABILE
 
-    // Declararea variabilelor, se declara cu null toate, tipurile lor sunt DcMotor sau Servo sau ce mai puneti pe robot
+    // Declararea variabilelor, se declara cu null in cazul obiectelor (Servo, DcMotor, etc.)
 
     // Motoarele de la roti
     private DcMotor motorDreaptaFata = null;
@@ -24,12 +24,10 @@ public class TeleOPMode extends OpMode {
     // Motoarele de la brat (cele care actioneaza glisierele din lateral)
     private DcMotor motorBrat1 = null;
     private DcMotor motorBrat2 = null;
-    private DcMotor motorBratCentral = null;
 
     // Servo-urile care actioneaza clestele
     private Servo servoGrab1 = null;
     private Servo servoGrab2 = null;
-    private Servo servoRotate = null;
 
     // Acestea sunt valorile minime si maxime care pot fii atribuite motoarelor si servo-urilor
     private double MIN_POSITION = 0, MAX_POSITION = 1;
@@ -38,15 +36,14 @@ public class TeleOPMode extends OpMode {
     private final static int powerInit = 0;
 
     // Valorile puterilor cu care se poate deplasa robotul
-    private final static double morePower = 0.6;
-    private final static double lessPower = 0.45;
+    private final static double morePower = 0.75;
+    private final static double lessPower = 0.6;
 
     // Variabila care contine valoarea puterii cu care se misca bratul
-    private double powerBrat1 = powerInit;
-    private double powerBrat2 = powerInit;
+    private double powerBrat = powerInit;
 
-    // Variabila care contine valoarea pozitiei la care se inchide grabul
-    private double positionGrab = 0.04;
+    // Variabila care contine valoarea pozitiei la care se deschide (+positionGrab) si se inchide (-positionGrab) Grab-ul
+    private double positionGrab = 0.06;
 
     // Valoarea puterii maxime cu care poate fii actionat bratul
     private double powerActiune = 1;
@@ -60,21 +57,27 @@ public class TeleOPMode extends OpMode {
     private double powerDreaptaSpate = powerInit;
     private double powerStangaSpate = powerInit;
 
-    // Expresiile logice care verifica daca butonul X (gamepad 1) care schimba vitezele a fost apasat, respectiv daca puterea a fost sau nu redusa (uita-te in metoda changePower)
+    // Expresiile logice care verifica daca butonul X (gamepad 1) care schimba vitezele a fost apasat, respectiv daca puterea a fost
+    // redusa (uita-te in metoda changePower)
     private boolean xRelease = true;
-    private boolean putereRedusa = false;
+    private boolean putereRedusa = true;
 
+    // Expresiile logice care verifica daca butonul Right Bumper (gamepad 2) care inchide sau deschide clestele a fost apasat, respectiv
+    // daca clestele este inchis (uita-te in metoda Grabber)
     private boolean rbRelease = true;
     private boolean clesteInchis = false;
 
+    // Expresiile logice care verifica daca butonul Left Bumper (gamepad 2) care roteste clestele la 0 si la 15 grade fata de pamant
+    // a fost apasat, respectiv daca clestele a fost rotit (uita-te in metoda Grabber)
     private boolean lbRelease = true;
-    private boolean clesteRotit = false;
+    private boolean bratRotit = false;
 
     @Override
     public void init() {
         // Se initializeaza in hardware map
 
-        //Metoda hardwareMap preia din expansion hub informatii despre motor/servo si nu mai este null, daca primiti eroarea NullPointerException s-ar putea sa fie din cauza ca nu ati initializat aici motorul si acesta a ramas null
+        // Metoda hardwareMap preia din expansion hub informatii despre motor/servo si nu mai este null, daca primiti eroarea
+        // NullPointerException s-ar putea sa fie din cauza ca nu ati initializat aici motorul si acesta a ramas null
         motorDreaptaFata = hardwareMap.dcMotor.get("motorDreaptaFata");
         motorDreaptaSpate = hardwareMap.dcMotor.get("motorDreaptaSpate");
         motorStangaFata = hardwareMap.dcMotor.get("motorStangaFata");
@@ -82,23 +85,13 @@ public class TeleOPMode extends OpMode {
 
         motorBrat1 = hardwareMap.dcMotor.get("motorBrat1");
         motorBrat2 = hardwareMap.dcMotor.get("motorBrat2");
-        motorBratCentral = hardwareMap.dcMotor.get("motorBratCentral");
 
         servoGrab1 = hardwareMap.servo.get("servoGrab1");
         servoGrab2 = hardwareMap.servo.get("servoGrab2");
-        servoRotate = hardwareMap.servo.get("servoRotate");
 
-        //Apelarea metodei initMotor declarata mai jos(obligatorie)
-        initMotor(motorDreaptaFata, "motorDreaptaFata", true, powerInit, true, true);
-        initMotor(motorStangaFata, "motorStangaFata", false, powerInit, true, true);
-        initMotor(motorDreaptaSpate, "motorDreaptaSpate", true, powerInit, true, true);
-        initMotor(motorStangaSpate, "motorStangaSpate", false, powerInit, true, true);
 
-        initMotor(motorBrat1, "motorBrat1", false, powerInit, true, true);
-        initMotor(motorBrat2, "motorBrat2", false, powerInit, true, true);
-        initMotor(motorBratCentral, "motorBratCentral", false, powerInit, true, true);
-
-        //Motoatele pot rula cu encoder sau fara encoder, encoderul este un cablu care care masoara diferite chestii despre motor, daca nu folositi encoder trebuie sa setati modul asta
+        // Motoatele pot rula cu encoder sau fara encoder, encoderul este un cablu care care masoara diferite chestii despre motor,
+        // daca nu folositi encoder trebuie sa setati modul asta
         motorDreaptaFata.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorStangaFata.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorDreaptaSpate.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -107,52 +100,32 @@ public class TeleOPMode extends OpMode {
         motorBrat1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorBrat2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        motorBratCentral.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        //Aici se seteaza diretia motorului, reverse sau forward, e simplu de inteles
-        motorDreaptaFata.setDirection(DcMotorSimple.Direction.FORWARD);
+        // Aici se seteaza diretia motorului, reverse sau forward, e simplu de inteles
+        motorDreaptaFata.setDirection(DcMotorSimple.Direction.REVERSE);
         motorStangaFata.setDirection(DcMotorSimple.Direction.FORWARD);
         motorDreaptaSpate.setDirection(DcMotorSimple.Direction.REVERSE);
         motorStangaSpate.setDirection(DcMotorSimple.Direction.FORWARD);
 
         motorBrat1.setDirection(DcMotorSimple.Direction.FORWARD);
         motorBrat2.setDirection(DcMotorSimple.Direction.REVERSE);
-        motorBratCentral.setDirection(DcMotorSimple.Direction.FORWARD);
 
         servoGrab1.setDirection(Servo.Direction.FORWARD);
         servoGrab2.setDirection(Servo.Direction.REVERSE);
 
-        setPower(powerDreaptaFata, powerStangaFata, powerDreaptaSpate, powerStangaSpate);
+        SetPowerRoti(powerDreaptaFata, powerStangaFata, powerDreaptaSpate, powerStangaSpate);
     }
-
 
     // Metoda care merge pe tot parcursul OP Mode-ului, aici apelati toate metodele care fac robotul sa se miste
     @Override
     public void loop() {
-        changePower();
-        ridicareBrat();
+        ChangePower();
+        MiscareGlisiere();
         Grabber();
-        Miscare();
+        MiscareRoti();
     }
-
-
-    // Metoda care initializeaza motoarele, nu se apaleaza in loop
-    private void initMotor(@Nullable DcMotor motor, String string, boolean sens, double power, boolean mode, boolean... secMode) {
-        motor = hardwareMap.dcMotor.get(string);
-        if (secMode.length > 0) {
-            motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        }
-        motor.setMode(mode ? DcMotor.RunMode.RUN_USING_ENCODER : DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        motor.setDirection(sens ? DcMotorSimple.Direction.FORWARD : DcMotorSimple.Direction.REVERSE);
-        if (motor != null) {
-            motor.setPower(power);
-        }
-    }
-
 
     // Metoda de setare a vitezei
-    private void setPower(double powerDreaptaFata, double powerStangaFata, double powerDreaptaSpate, double powerStangaSpate) {
+    private void SetPowerRoti(double powerDreaptaFata, double powerStangaFata, double powerDreaptaSpate, double powerStangaSpate) {
         motorDreaptaFata.setPower(powerDreaptaFata);
         motorStangaFata.setPower(powerStangaFata);
         motorDreaptaSpate.setPower(powerDreaptaSpate);
@@ -160,8 +133,8 @@ public class TeleOPMode extends OpMode {
     }
 
     // Metoda care modifica valoarea vitezei
-    public void changePower() {
-        if (gamepad1.x) {
+    public void ChangePower() {
+        if (gamepad1.square) {
             if (xRelease) {
                 xRelease = false;
                 if (!putereRedusa) {
@@ -177,14 +150,14 @@ public class TeleOPMode extends OpMode {
         }
     }
 
-    //Miscarea rotilor nachanum (Miscarea robotului fata spate stanga dreapta)
-    private void Miscare() {
-        powerDreaptaFata = Range.clip(gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -powerMiscareFata, powerMiscareFata);
-        powerStangaFata = Range.clip(gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x, -powerMiscareFata, powerMiscareFata);
-        powerDreaptaSpate = Range.clip(gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x, -powerMiscareFata, powerMiscareFata);
-        powerStangaSpate = Range.clip(gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x, -powerMiscareFata, powerMiscareFata);
+    // Miscarea rotilor nachanum (Miscarea robotului fata spate stanga dreapta)
+    private void MiscareRoti() {
+        powerDreaptaFata = Range.clip(gamepad1.left_stick_y + gamepad1.left_stick_x - (gamepad1.right_stick_x * 1.5), -powerMiscareFata, powerMiscareFata);
+        powerStangaFata = Range.clip(gamepad1.left_stick_y - gamepad1.left_stick_x + (gamepad1.right_stick_x * 1.5), -powerMiscareFata, powerMiscareFata);
+        powerDreaptaSpate = Range.clip(gamepad1.left_stick_y - gamepad1.left_stick_x - (gamepad1.right_stick_x * 1.5), -powerMiscareFata, powerMiscareFata);
+        powerStangaSpate = Range.clip(gamepad1.left_stick_y + gamepad1.left_stick_x + (gamepad1.right_stick_x * 1.5), -powerMiscareFata, powerMiscareFata);
 
-        setPower(powerDreaptaFata, powerStangaFata, powerDreaptaSpate, powerStangaSpate);
+        SetPowerRoti(powerDreaptaFata, powerStangaFata, powerDreaptaSpate, powerStangaSpate);
     }
 
     // Metoda care actioneaza clestele ; acesta se inchide/se deschide atunci cand butonul X de pe gamepad 2 este apasat
@@ -193,8 +166,8 @@ public class TeleOPMode extends OpMode {
             if (rbRelease) {
                 rbRelease = false;
                 if (!clesteInchis) {
-                    servoGrab1.setPosition(-positionGrab);
-                    servoGrab2.setPosition(-positionGrab);
+                    servoGrab1.setPosition(0.02);
+                    servoGrab2.setPosition(0.02);
                     clesteInchis = true;
                 } else {
                     servoGrab1.setPosition(positionGrab);
@@ -205,39 +178,14 @@ public class TeleOPMode extends OpMode {
         } else {
             rbRelease = true;
         }
-
-        if(gamepad2.left_bumper){
-            if(lbRelease){
-                lbRelease = false;
-                if(!clesteRotit) {
-                    servoRotate.setPosition(-0.01);
-                    clesteRotit = true;
-                } else {
-                    servoRotate.setPosition(0.02);
-                    clesteRotit = false;
-                }
-            }
-        } else {
-            lbRelease = true;
-        }
-
-        /*if(gamepad2.right_bumper){
-            servoGrab1.setPosition(MIN_POSITION);
-            servoGrab2.setPosition(MIN_POSITION);
-        } else if(gamepad2.left_bumper) {
-            servoGrab1.setPosition(positionGrab);
-            servoGrab2.setPosition(positionGrab);
-        }*/
     }
 
     // Metoda care ridica bratul
-    private void ridicareBrat() {
+    private void MiscareGlisiere() {
         // metoda range.clip seteaza puterea unui motor in functie de range-ul manetei de pe controller
-        powerBrat1 = Range.clip(gamepad2.left_stick_y, -powerActiune, powerActiune);
-        powerBrat2 = Range.clip(gamepad2.right_stick_y, -powerActiune, powerActiune);
-        motorBrat1.setPower(powerBrat1);
-        motorBrat2.setPower(powerBrat1);
-        motorBratCentral.setPower(powerBrat2);
+        powerBrat = Range.clip(gamepad2.left_stick_y, -powerActiune, powerActiune) - 0.1;
+        motorBrat1.setPower(powerBrat);
+        motorBrat2.setPower(powerBrat);
     }
 
 }
