@@ -17,7 +17,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import java.util.ArrayList;
 
 @Autonomous(name="Autonomie Dreapta", group="Autonomie")
-//@Disabled
+
 public class AutonomieDreapta extends LinearOpMode{
 
     // VARIABILE
@@ -31,6 +31,9 @@ public class AutonomieDreapta extends LinearOpMode{
             (WHEEL_DIAMETER_INCHES * 3.1415);
     static final double     DRIVE_SPEED             = 0.6;
     static final double     TURN_SPEED              = 0.5;
+    static final double     WHELL_CIRCUMFERENCE_CM    = 9.6;
+    static final double INDICE = 13.76225;
+    static final double CM_PER_DEG = 0.60599500129;
 
     // Motoarele de la roti
     private DcMotorEx motorDreaptaFata = null;
@@ -52,28 +55,18 @@ public class AutonomieDreapta extends LinearOpMode{
     // Valoarea puterii cu care se initiaza motoarele (0, ca sa nu se miste)
     private final static int powerInit = 0;
 
-    // Valorile puterilor cu care se poate deplasa robotul
-    private final static double morePower = 0.6;
-    private final static double lessPower = 0.4;
-
     // Variabila care contine valoarea puterii cu care se misca bratul
     private double powerBrat1 = powerInit;
     private double powerBrat2 = powerInit;
 
-
-    private double positionGrab = 0.06;
+    // Variabila care contine valoarea pozitiei la care se inchide grabberul/clestele
+    private double positionGrab = 0.065;
 
     // Valoarea puterii maxime cu care poate fii actionat bratul
     private double powerActiune = 1;
 
     // Variabila care contine valoarea puterii cu care se deplaseaza robotul
-    private double powerMiscareFata = lessPower;
-
-    // Variabilele care contin valoarea puterilor cu care se vor misca motoarele de la roti
-    private double powerDreaptaFata = powerInit;
-    private double powerStangaFata = powerInit;
-    private double powerDreaptaSpate = powerInit;
-    private double powerStangaSpate = powerInit;
+    private double powerMiscareRoti = 0.34;
 
     // Variabila care contine informatii despre Runtime (timpul de la Initializare)
     private ElapsedTime runtime = new ElapsedTime();
@@ -100,8 +93,8 @@ public class AutonomieDreapta extends LinearOpMode{
     // Variabila care contine informatii despre tag-ul pe care il detectam
     AprilTagDetection tagDetectat = null;
 
-    // Expresia logica care
     boolean tagGasit = false;
+//    int ticks = (int) ((cm / WHELL_CIRCUMFERENCE_CM) * COUNTS_PER_MOTOR_REV);
 
     @Override
     public void runOpMode() {
@@ -143,10 +136,13 @@ public class AutonomieDreapta extends LinearOpMode{
                 switch (tagDetectat.id) {
                     case 0:
                         MersSpreZona1();
+                        break;
                     case 1:
                         MersSpreZona2();
+                        break;
                     case 2:
                         MersSpreZona3();
+                        break;
                 }
             } else {
                 MersSpreZona2();
@@ -156,88 +152,254 @@ public class AutonomieDreapta extends LinearOpMode{
 
     private void MersSpreZona1() {
         if(opModeIsActive()){
-            // TODO cod pentru mers spre zona 1
+            RotatieDistanta("Dreapta", 155);
+            sleep(500);
+            MiscareRotiDistanta("Spate", 52);
+            sleep(500);
+            MiscareRotiDistanta("Dreapta", 25);
+            sleep(500);
         }
     }
 
     private void MersSpreZona2() {
         if(opModeIsActive()){
-            // TODO cod pentru mers spre zona 2
+            RotatieDistanta("Dreapta", 155);
+            sleep(500);
         }
     }
 
     private void MersSpreZona3() {
         if(opModeIsActive()){
-            // TODO cod pentru mers spre zona 3
+            RotatieDistanta("Dreapta", 155);
+            sleep(500);
+            MiscareRotiDistanta("Fata", 60);
+            sleep(500);
+            MiscareRotiDistanta("Dreapta", 25);
+            sleep(500);
         }
     }
 
     private void PuneConuri() {
         if(opModeIsActive()) {
-            for (int i = 0; i < 5; i += 1) {
-                // TODO cod sa puna conurile din stack pe junctiunea mare
-            }
+            MiscareRotiDistanta("Spate",60);
+            sleep(200);
+            RotatieDistanta("Stanga", 180);
+            MiscareGlisiere("Sus", 0.4);
+            sleep(200);
+            MiscareRotiDistanta("Fata", 20);
+            sleep(500);
+            Grab("Deschis");
+            sleep(500);
+            MiscareRotiDistanta("Spate", 5);
+            sleep(500);
+            MiscareGlisiere("Jos", 1);
         }
     }
 
     private void MersSpreStack() {
+        if(opModeIsActive()){
+            /*MiscareGlisiere("Sus", 0.5);
+            MiscareRotiDistanta("Fata", 70);
+            sleep(100);
+            RotatieDistanta("Stanga", 20);
+            sleep(100);
+            MiscareGlisiere("Sus", 0.4);
+            sleep(100);
+            MiscareRotiDistanta("Fata", 20);
+            sleep(100);
+            Grab("Deschis");
+            MiscareRotiDistanta("Spate", 20);
+            sleep(100);
+            MiscareGlisiere("Jos", 0.4);
+            sleep(100);
+            RotatieDistanta("Dreapta", 30);
+            sleep(100);
+            MiscareRotiDistanta("Fata", 75);
+            sleep(100);
+            RotatieDistanta("Dreapta", 130);
+            MiscareGlisiere("Jos", 0.2);
+            sleep(100);
+            MiscareRotiDistanta("Fata", 55);
+            sleep(100);
+            Grab("Inchis");
+            sleep(100);
+            MiscareGlisiere("Sus", 0.5);
+            sleep(100);*/
 
-    }
+            MiscareGlisiere("Sus", 0.5);
+            MiscareRotiDistanta("Fata", 145);
+            sleep(100);
+            RotatieDistanta("Stanga", 5);
+            sleep(100);
+            MiscareGlisiere("Sus", 0.9);
+            sleep(100);
+            MiscareRotiDistanta("Fata", 15);
+            sleep(300);
+            Grab("Deschis");
+            sleep(200);
+            MiscareRotiDistanta("Spate", 10);
+            sleep(200);
+            RotatieDistanta("Dreapta", 145);
+            MiscareGlisiere("Jos", 0.9);
+            sleep(100);
+            MiscareRotiDistanta("Fata", 75);
+            sleep(200);
+            Grab("Inchis");
+            sleep(600);
+            MiscareGlisiere("Sus", 0.8);
+            sleep(500);
 
-    private void MiscareRoti(String directie, double secunde) {
-        switch (directie) {
-            case "Dreapta":
-
-
-
-//            case "Dreapta":
-//                runtime.reset();
-//                while (runtime.seconds() < secunde && opModeIsActive()) {
-//                    setPowerRoti(powerMiscareFata, -powerMiscareFata, -powerMiscareFata, powerMiscareFata);
-//                }
-//                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
-//                break;
-//
-//            case "Stanga":
-//                runtime.reset();
-//                while (runtime.seconds() < secunde && opModeIsActive()) {
-//
-//                    setPowerRoti(-powerMiscareFata, powerMiscareFata, powerMiscareFata, -powerMiscareFata);
-//                }
-//                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
-//                break;
-//
-//            case "Fata":
-//                runtime.reset();
-//                while (runtime.seconds() < secunde && opModeIsActive()) {
-//
-//                    setPowerRoti(-powerMiscareFata, -powerMiscareFata, -powerMiscareFata, -powerMiscareFata);
-//                }
-//                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
-//                break;
-//
-//            case "Spate":
-//                runtime.reset();
-//                while (runtime.seconds() < secunde && opModeIsActive()) {
-//
-//                    setPowerRoti(powerMiscareFata, powerMiscareFata, powerMiscareFata, powerMiscareFata);
-//                }
-//                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
-//                break;
-//
-//            default:
-//                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
-//                break;
         }
     }
 
+    private void MiscareRotiTimp(String directie, double secunde) {
+        switch (directie) {
+            case "Dreapta":
+                runtime.reset();
+                while (runtime.seconds() < secunde && opModeIsActive()) {
+                    setPowerRoti(powerMiscareRoti, -powerMiscareRoti, -powerMiscareRoti, powerMiscareRoti);
+                }
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+                break;
+
+            case "Stanga":
+                runtime.reset();
+                while (runtime.seconds() < secunde && opModeIsActive()) {
+
+                    setPowerRoti(-powerMiscareRoti, powerMiscareRoti, powerMiscareRoti, -powerMiscareRoti);
+                }
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+                break;
+
+            case "Fata":
+                runtime.reset();
+                while (runtime.seconds() < secunde && opModeIsActive()) {
+
+                    setPowerRoti(-powerMiscareRoti, -powerMiscareRoti, -powerMiscareRoti, -powerMiscareRoti);
+                }
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+                break;
+
+            case "Spate":
+                runtime.reset();
+                while (runtime.seconds() < secunde && opModeIsActive()) {
+
+                    setPowerRoti(powerMiscareRoti, powerMiscareRoti, powerMiscareRoti, powerMiscareRoti);
+                }
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+                break;
+
+            default:
+                setPowerRoti(powerInit, powerInit, powerInit, powerInit);
+                break;
+        }
+    }
+
+    private void RotatieDistanta(String directie, double deg) {
+        // Encoder Ticks = (Distance in centimeters / Wheel Circumference in centimeters) * Encoder Counts per Revolution
+        double cm = CM_PER_DEG * deg;
+        int ticks = (int) (cm * INDICE);
+
+        switch(directie) {
+            case "Stanga":
+                motorStangaFata.setTargetPosition(ticks);
+
+                motorStangaFata.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+                setPowerRoti(-powerMiscareRoti, powerMiscareRoti, -powerMiscareRoti, powerMiscareRoti);
+
+                while (motorStangaFata.isBusy()) {
+                    telemetry.addData("Pozitie Stanga Fata:", motorStangaFata.getCurrentPosition());
+                    telemetry.update();
+                }
+                setPowerRoti(0, 0, 0, 0);
+                break;
+            case "Dreapta":
+                motorStangaFata.setTargetPosition(-ticks);
+
+                motorStangaFata.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+                setPowerRoti(powerMiscareRoti, -powerMiscareRoti, powerMiscareRoti, -powerMiscareRoti);
+
+                while (motorStangaFata.isBusy()) {
+                    telemetry.addData("Pozitie Stanga Fata:", motorStangaFata.getCurrentPosition());
+                    telemetry.update();
+                }
+                setPowerRoti(0, 0, 0, 0);
+                break;
+        }
+        motorStangaFata.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    }
+
+    private void MiscareRotiDistanta(String directie , double cm) {
+        // Encoder Ticks = (Distance in centimeters / Wheel Circumference in centimeters) * Encoder Counts per Revolution
+        int ticks = (int) (cm * INDICE);
+        runtime.reset();
+
+        switch(directie) {
+            case "Fata":
+                motorStangaFata.setTargetPosition(-ticks);
+
+                motorStangaFata.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+                setPowerRoti(-powerMiscareRoti, -powerMiscareRoti, -powerMiscareRoti, -powerMiscareRoti);
+
+                while (motorStangaFata.isBusy()) {
+                    telemetry.addData("Pozitie Stanga Fata:", motorStangaFata.getCurrentPosition());
+                    telemetry.update();
+                }
+                setPowerRoti(0, 0, 0, 0);
+                break;
+            case "Spate":
+                motorStangaFata.setTargetPosition(ticks);
+
+                motorStangaFata.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+                setPowerRoti(powerMiscareRoti, powerMiscareRoti, powerMiscareRoti, powerMiscareRoti);
+
+                while (motorStangaFata.isBusy()) {
+                    telemetry.addData("Pozitie Stanga Fata:", motorStangaFata.getCurrentPosition());
+                    telemetry.update();
+                }
+                setPowerRoti(0, 0, 0, 0);
+                break;
+            case "Dreapta":
+                motorStangaFata.setTargetPosition(-ticks);
+
+                motorStangaFata.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+                setPowerRoti(powerMiscareRoti, -powerMiscareRoti, -powerMiscareRoti, powerMiscareRoti);
+
+                while (motorStangaFata.isBusy()) {
+                    telemetry.addData("Pozitie Stanga Fata:", motorStangaFata.getCurrentPosition());
+                    telemetry.update();
+                }
+                setPowerRoti(0, 0, 0, 0);
+                break;
+            case "Stanga":
+                motorStangaFata.setTargetPosition(ticks);
+
+                motorStangaFata.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+                setPowerRoti(-powerMiscareRoti, powerMiscareRoti, powerMiscareRoti, -powerMiscareRoti);
+
+                while (motorStangaFata.isBusy()) {
+                    telemetry.addData("Pozitie Stanga Fata:", motorStangaFata.getCurrentPosition());
+                    telemetry.update();
+                }
+                setPowerRoti(0, 0, 0, 0);
+                break;
+        }
+        motorStangaFata.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    }
+
     // Metoda care face robotul sa se roteasca intr-o directie data pentru un anumit interval de timp exprimat in secunde
-    private void Rotatie(String directie, double secunde){
+    private void RotatieTimp(String directie, double secunde){
         switch (directie){
             case "Stanga":
                 runtime.reset();
                 while(runtime.seconds() < secunde && opModeIsActive()){
-                    setPowerRoti(-powerMiscareFata, powerMiscareFata, -powerMiscareFata, powerMiscareFata);
+                    setPowerRoti(-powerMiscareRoti, powerMiscareRoti, -powerMiscareRoti, powerMiscareRoti);
                 }
                 setPowerRoti(powerInit, powerInit, powerInit, powerInit);
                 break;
@@ -245,7 +407,7 @@ public class AutonomieDreapta extends LinearOpMode{
             case "Dreapta":
                 runtime.reset();
                 while(runtime.seconds() < secunde && opModeIsActive()){
-                    setPowerRoti(powerMiscareFata, -powerMiscareFata, powerMiscareFata, -powerMiscareFata);
+                    setPowerRoti(powerMiscareRoti, -powerMiscareRoti, powerMiscareRoti, -powerMiscareRoti);
                 }
                 setPowerRoti(powerInit, powerInit, powerInit, powerInit);
                 break;
@@ -257,20 +419,20 @@ public class AutonomieDreapta extends LinearOpMode{
             case "Sus":
                 runtime.reset();
                 while(runtime.seconds() < secunde && opModeIsActive()){
-
+                    setPowerGlisiere(powerActiune);
                 }
+                setPowerGlisiere(0.1);
                 break;
 
             case "Jos":
                 runtime.reset();
                 while(runtime.seconds() < secunde && opModeIsActive()) {
-
+                    setPowerGlisiere(-powerActiune);
                 }
+                setPowerGlisiere(0.1);
                 break;
         }
     }
-
-
 
     private void initATD(){
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
@@ -308,15 +470,12 @@ public class AutonomieDreapta extends LinearOpMode{
         servoGrab2 = hardwareMap.servo.get("servoGrab2");
 
         //Motoatele pot rula cu encoder sau fara encoder, encoderul este un cablu care care masoara diferite chestii despre motor, daca nu folositi encoder trebuie sa setati modul asta
-        motorDreaptaFata.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        motorStangaFata.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        motorDreaptaSpate.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-        motorStangaSpate.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        motorStangaFata.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        motorDreaptaFata.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        motorDreaptaFata.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         motorStangaFata.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        motorDreaptaSpate.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        motorStangaSpate.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        motorDreaptaSpate.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        motorStangaSpate.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
 
         motorBrat1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorBrat2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -333,8 +492,21 @@ public class AutonomieDreapta extends LinearOpMode{
         servoGrab1.setDirection(Servo.Direction.FORWARD);
         servoGrab2.setDirection(Servo.Direction.REVERSE);
 
-        setPowerGlisiere(0.2);
-        setPowerRoti(powerDreaptaFata, powerStangaFata, powerDreaptaSpate, powerStangaSpate);
+        setPowerGlisiere(0.1);
+        setPowerRoti(0, 0, 0, 0);
+        Grab("Inchis");
+}
+
+    private void Grab(String inchis){
+        switch(inchis){
+            case "Deschis":
+                servoGrab1.setPosition(0.03);
+                servoGrab2.setPosition(0.03);
+                break;
+            case "Inchis":
+                servoGrab1.setPosition(positionGrab);
+                servoGrab2.setPosition(positionGrab);
+        }
     }
 
     // Seteaza puterea rotilor

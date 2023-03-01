@@ -43,7 +43,7 @@ public class TeleOPMode extends OpMode {
     private double powerBrat = powerInit;
 
     // Variabila care contine valoarea pozitiei la care se deschide (+positionGrab) si se inchide (-positionGrab) Grab-ul
-    private double positionGrab = 0.06;
+    private double positionGrab = 0.065;
 
     // Valoarea puterii maxime cu care poate fii actionat bratul
     private double powerActiune = 1;
@@ -106,8 +106,8 @@ public class TeleOPMode extends OpMode {
         motorDreaptaSpate.setDirection(DcMotorSimple.Direction.REVERSE);
         motorStangaSpate.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        motorBrat1.setDirection(DcMotorSimple.Direction.FORWARD);
-        motorBrat2.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorBrat1.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorBrat2.setDirection(DcMotorSimple.Direction.FORWARD);
 
         servoGrab1.setDirection(Servo.Direction.FORWARD);
         servoGrab2.setDirection(Servo.Direction.REVERSE);
@@ -166,12 +166,12 @@ public class TeleOPMode extends OpMode {
             if (rbRelease) {
                 rbRelease = false;
                 if (!clesteInchis) {
-                    servoGrab1.setPosition(0.02);
-                    servoGrab2.setPosition(0.02);
-                    clesteInchis = true;
-                } else {
                     servoGrab1.setPosition(positionGrab);
                     servoGrab2.setPosition(positionGrab);
+                    clesteInchis = true;
+                } else {
+                    servoGrab1.setPosition(0.03);
+                    servoGrab2.setPosition(0.03);
                     clesteInchis = false;
                 }
             }
