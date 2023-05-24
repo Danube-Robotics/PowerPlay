@@ -82,13 +82,10 @@ public class TeleOPMode extends OpMode {
         motorDreaptaSpate = hardwareMap.dcMotor.get("motorDreaptaSpate");
         motorStangaFata = hardwareMap.dcMotor.get("motorStangaFata");
         motorStangaSpate = hardwareMap.dcMotor.get("motorStangaSpate");
-
         motorBrat1 = hardwareMap.dcMotor.get("motorBrat1");
         motorBrat2 = hardwareMap.dcMotor.get("motorBrat2");
-
         servoGrab1 = hardwareMap.servo.get("servoGrab1");
         servoGrab2 = hardwareMap.servo.get("servoGrab2");
-
 
         // Motoatele pot rula cu encoder sau fara encoder, encoderul este un cablu care care masoara diferite chestii despre motor,
         // daca nu folositi encoder trebuie sa setati modul asta
@@ -96,7 +93,6 @@ public class TeleOPMode extends OpMode {
         motorStangaFata.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorDreaptaSpate.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorStangaSpate.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
         motorBrat1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         motorBrat2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
@@ -105,17 +101,15 @@ public class TeleOPMode extends OpMode {
         motorStangaFata.setDirection(DcMotorSimple.Direction.FORWARD);
         motorDreaptaSpate.setDirection(DcMotorSimple.Direction.REVERSE);
         motorStangaSpate.setDirection(DcMotorSimple.Direction.FORWARD);
-
         motorBrat1.setDirection(DcMotorSimple.Direction.REVERSE);
         motorBrat2.setDirection(DcMotorSimple.Direction.FORWARD);
-
         servoGrab1.setDirection(Servo.Direction.FORWARD);
         servoGrab2.setDirection(Servo.Direction.REVERSE);
 
         SetPowerRoti(powerDreaptaFata, powerStangaFata, powerDreaptaSpate, powerStangaSpate);
     }
 
-    // Metoda care merge pe tot parcursul OP Mode-ului, aici apelati toate metodele care fac robotul sa se miste
+    // Metoda care merge pe tot parcursul OP Mode-ului, aici apelati toate metodele care fac robotul sa functioneze
     @Override
     public void loop() {
         ChangePower();
@@ -150,7 +144,7 @@ public class TeleOPMode extends OpMode {
         }
     }
 
-    // Miscarea rotilor nachanum (Miscarea robotului fata spate stanga dreapta)
+    // Miscarea rotilor Strafer mechanum (miscarea robotului)
     private void MiscareRoti() {
         powerDreaptaFata = Range.clip(gamepad1.left_stick_y + gamepad1.left_stick_x - (gamepad1.right_stick_x * 1.5), -powerMiscareFata, powerMiscareFata);
         powerStangaFata = Range.clip(gamepad1.left_stick_y - gamepad1.left_stick_x + (gamepad1.right_stick_x * 1.5), -powerMiscareFata, powerMiscareFata);
@@ -182,10 +176,12 @@ public class TeleOPMode extends OpMode {
 
     // Metoda care ridica bratul
     private void MiscareGlisiere() {
-        // metoda range.clip seteaza puterea unui motor in functie de range-ul manetei de pe controller
+        // Metoda range.clip seteaza puterea unui motor in functie de range-ul manetei de pe controller
         powerBrat = Range.clip(gamepad2.left_stick_y, -powerActiune, powerActiune) - 0.1;
+
         motorBrat1.setPower(powerBrat);
         motorBrat2.setPower(powerBrat);
+
     }
 
 }

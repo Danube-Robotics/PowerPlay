@@ -66,7 +66,7 @@ public class AutonomieDreapta extends LinearOpMode{
     private double powerActiune = 1;
 
     // Variabila care contine valoarea puterii cu care se deplaseaza robotul
-    private double powerMiscareRoti = 0.34;
+    private double powerMiscareRoti = 0.36;
 
     // Variabila care contine informatii despre Runtime (timpul de la Initializare)
     private ElapsedTime runtime = new ElapsedTime();
@@ -94,7 +94,6 @@ public class AutonomieDreapta extends LinearOpMode{
     AprilTagDetection tagDetectat = null;
 
     boolean tagGasit = false;
-//    int ticks = (int) ((cm / WHELL_CIRCUMFERENCE_CM) * COUNTS_PER_MOTOR_REV);
 
     @Override
     public void runOpMode() {
@@ -105,11 +104,17 @@ public class AutonomieDreapta extends LinearOpMode{
 
         if (opModeIsActive()) {
             runtime.reset();
+            // Cat timp April Tag-ul de pe con nu a fost gasit si nu au trecut mai mult de 3 secunde
             while (!tagGasit && runtime.seconds() < 3) {
+                // Se creeaza o lista a April Tag-urilor detectate
                 ArrayList<AprilTagDetection> currentDetections = aprilTagDetectionPipeline.getLatestDetections();
 
+                // Daca lista nu este goala, adica daca au fost detectate unul sau mai multe April Tag-uri
                 if (currentDetections.size() != 0) {
 
+                    // Se itereaza prin lista de April Tag-uri, iar daca vreunul din tag-uri are ID-ul
+                    // 0, 1 sau 2, reprezentativ zonelor de semnal de pe con, modificam expresia logica
+                    // tagGasit si iesim din secventa repetitiva
                     for (AprilTagDetection tag : currentDetections) {
                         if (tag.id == 0 || tag.id == 1 || tag.id == 2) {
                             tagDetectat = tag;
@@ -118,6 +123,7 @@ public class AutonomieDreapta extends LinearOpMode{
                         }
                     }
 
+                    // Anuntam daca zona de semnal a fost detectata sau nu
                     if (tagGasit) {
                         telemetry.addLine("Zona de semnal a fost gasita!\n\nTag data:");
                         tagToTelemetry(tagDetectat);
@@ -133,6 +139,7 @@ public class AutonomieDreapta extends LinearOpMode{
             PuneConuri();
 
             if (tagDetectat != null) {
+                // In functie de ID-ul tag-ului detectat, robotul se deplaseaza la zona de semnal detectata
                 switch (tagDetectat.id) {
                     case 0:
                         MersSpreZona1();
@@ -145,12 +152,14 @@ public class AutonomieDreapta extends LinearOpMode{
                         break;
                 }
             } else {
-                MersSpreZona2();
+                MersSpreZona2(); // Cazul "default", atunci cand tag-ul nu a fost detectat (1/3 sansa sa fie corect)
             }
+
         }
     }
 
     private void MersSpreZona1() {
+        // Traseul robotului catre zona de semnal 1
         if(opModeIsActive()){
             RotatieDistanta("Dreapta", 155);
             sleep(500);
@@ -162,6 +171,7 @@ public class AutonomieDreapta extends LinearOpMode{
     }
 
     private void MersSpreZona2() {
+        // Traseul robotului catre zona de semnal 2
         if(opModeIsActive()){
             RotatieDistanta("Dreapta", 155);
             sleep(500);
@@ -169,6 +179,7 @@ public class AutonomieDreapta extends LinearOpMode{
     }
 
     private void MersSpreZona3() {
+        // Traseul robotului catre zona de semnal 3
         if(opModeIsActive()){
             RotatieDistanta("Dreapta", 155);
             sleep(500);
@@ -180,6 +191,7 @@ public class AutonomieDreapta extends LinearOpMode{
     }
 
     private void PuneConuri() {
+        // Traseul robotului de la stack catre junctiunea mare, pe care pune con, si inapoi
         if(opModeIsActive()) {
             MiscareRotiDistanta("Spate",60);
             sleep(200);
@@ -197,35 +209,8 @@ public class AutonomieDreapta extends LinearOpMode{
     }
 
     private void MersSpreStack() {
+        // Traseul robotului catre stack (dupa ce a pus conul pe junctiune la inceput)
         if(opModeIsActive()){
-            /*MiscareGlisiere("Sus", 0.5);
-            MiscareRotiDistanta("Fata", 70);
-            sleep(100);
-            RotatieDistanta("Stanga", 20);
-            sleep(100);
-            MiscareGlisiere("Sus", 0.4);
-            sleep(100);
-            MiscareRotiDistanta("Fata", 20);
-            sleep(100);
-            Grab("Deschis");
-            MiscareRotiDistanta("Spate", 20);
-            sleep(100);
-            MiscareGlisiere("Jos", 0.4);
-            sleep(100);
-            RotatieDistanta("Dreapta", 30);
-            sleep(100);
-            MiscareRotiDistanta("Fata", 75);
-            sleep(100);
-            RotatieDistanta("Dreapta", 130);
-            MiscareGlisiere("Jos", 0.2);
-            sleep(100);
-            MiscareRotiDistanta("Fata", 55);
-            sleep(100);
-            Grab("Inchis");
-            sleep(100);
-            MiscareGlisiere("Sus", 0.5);
-            sleep(100);*/
-
             MiscareGlisiere("Sus", 0.5);
             MiscareRotiDistanta("Fata", 145);
             sleep(100);
@@ -248,10 +233,10 @@ public class AutonomieDreapta extends LinearOpMode{
             sleep(600);
             MiscareGlisiere("Sus", 0.8);
             sleep(500);
-
         }
     }
 
+    // Metoda care face robotul sa se deplaseze intr-o anumita directie intr-un interval de timp exprimat in secunde
     private void MiscareRotiTimp(String directie, double secunde) {
         switch (directie) {
             case "Dreapta":
@@ -522,7 +507,7 @@ public class AutonomieDreapta extends LinearOpMode{
         motorBrat2.setPower(powerActiune);
     }
 
-
+    // Adauga informatiile legate de pozitia si ID-ul tagului pe telemetry
     void tagToTelemetry(AprilTagDetection detection)
     {
         telemetry.addLine(String.format("\nDetected tag ID=%d", detection.id));
